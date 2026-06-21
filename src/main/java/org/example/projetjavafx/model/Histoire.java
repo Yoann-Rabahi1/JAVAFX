@@ -74,6 +74,14 @@ public class Histoire {
         this.ListPersonnage.add(newPersonnage);
     }
 
+    public void addPersonnage(String nom, String role)
+    {
+        Personnage newPersonnage = new Personnage(nom, role);
+        this.ListPersonnage.add(newPersonnage);
+    }
+
+
+
     @Override
     public String toString() {
         return "Histoire{" +

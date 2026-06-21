@@ -22,9 +22,9 @@ public class Personnage {
         this.description_personnage = description_personnage;
     }
 
-    public Personnage(int id_personnage, String role_personnage)
+    public Personnage(String nom_personnage, String role_personnage)
     {
-        this.id_personnage = id_personnage;
+        this.nom_personnage = nom_personnage;
         this.role_personnage = role_personnage;
     }
 
