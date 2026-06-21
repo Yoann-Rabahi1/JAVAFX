@@ -8,4 +8,6 @@ module org.example.projetjavafx {
 
     opens org.example.projetjavafx to javafx.fxml;
     exports org.example.projetjavafx;
+    exports org.example.projetjavafx.controller;
+    opens org.example.projetjavafx.controller to javafx.fxml;
 }
