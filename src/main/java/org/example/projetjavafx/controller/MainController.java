@@ -1,42 +1,31 @@
 package org.example.projetjavafx.controller;
 
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.Parent;
-import javafx.scene.layout.StackPane;
-import java.io.IOException;
+import javafx.fxml.Initializable;
+import org.example.projetjavafx.controller.HistoireController;
+import org.example.projetjavafx.controller.MainController;
 
-public class MainController {
+import java.net.URL;
+import java.util.ResourceBundle;
+
+public class MainController implements Initializable {
+
+    // JavaFX injecte automatiquement les deux sous-contrôleurs grâce aux fx:id du hello-view.fxml
+    @FXML
+    private HistoireController histoireViewController; // nom du fx:id + "Controller"
 
     @FXML
-    private StackPane conteneurCentral;
+    private PersonnageController personnageViewController; // nom du fx:id + "Controller"
 
-    @FXML
-    public void initialize() {
-        afficherVueHistoire();
-    }
+    @Override
+    public void initialize(URL url, ResourceBundle resourceBundle) {
+        if (histoireViewController != null && personnageViewController != null) {
+            // 1. Liaison des contrôleurs pour la synchronisation des clics
+            histoireViewController.setPersonnageController(personnageViewController);
 
-    @FXML
-    private void afficherVueHistoire() {
-        chargerSousVue("/org/example/projetjavafx/histoire-view.fxml");
-    }
-
-    @FXML
-    private void afficherVuePersonnage() {
-        chargerSousVue("/org/example/projetjavafx/personnage-view.fxml");
-    }
-
-    private void chargerSousVue(String fxmlPath) {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource(fxmlPath));
-            Parent sousVue = loader.load();
-
-            conteneurCentral.getChildren().clear();
-            conteneurCentral.getChildren().add(sousVue);
-
-        } catch (IOException e) {
-            System.out.println("Erreur de chargement de la vue : " + e.getMessage());
-            e.printStackTrace();
+            // 2. SYNCHRONISATION DIRECTE : Le ComboBox utilise EXACTEMENT la même liste observable
+            // que la ListView. Toute modification (ajout/suppression) sera instantanée !
+            personnageViewController.initialiserListeHistoires(histoireViewController.getListHistoires().getItems());
         }
     }
 }

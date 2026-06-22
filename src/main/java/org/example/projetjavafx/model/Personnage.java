@@ -1,5 +1,8 @@
 package org.example.projetjavafx.model;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Personnage {
 
     private int id_personnage;
@@ -61,13 +64,9 @@ public class Personnage {
     }
 
 
+
     @Override
     public String toString() {
-        return "Personnage{" +
-                "id_personnage=" + id_personnage +
-                ", nom personnage=" + nom_personnage +
-                ", role_personnage='" + role_personnage + '\'' +
-                ", description_personnage='" + description_personnage + '\'' +
-                '}';
+        return this.nom_personnage + " [" + this.role_personnage + "]";
     }
 }

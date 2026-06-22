@@ -9,21 +9,21 @@ public class Histoire {
     private String titre;
     private String auteur;
     private String resumer;
-    private List<Personnage> ListPersonnage;
+    private List<Personnage> listePersonnages;
 
-    public Histoire(int idHisoire, String titre, List<Personnage> listPersonnage, String auteur, String resumer) {
+    public Histoire(int idHisoire, String titre, String auteur, String resumer) {
         this.idHisoire = idHisoire;
         this.titre = titre;
         this.auteur = auteur;
         this.resumer = resumer;
-        ListPersonnage = new ArrayList<Personnage>();
+        listePersonnages = new ArrayList<Personnage>();
     }
 
-    public Histoire(int idHisoire, String titre, List<Personnage> listPersonnage, String auteur) {
-        this.idHisoire = idHisoire;
+    public Histoire( String titre, String auteur, String resumer) {
         this.titre = titre;
         this.auteur = auteur;
-        ListPersonnage = new ArrayList<Personnage>();
+        this.resumer = resumer;
+        listePersonnages = new ArrayList<Personnage>();
     }
 
     public int getIdHisoire() {
@@ -59,37 +59,45 @@ public class Histoire {
     }
 
     public List<Personnage> getListPersonnage() {
-        return ListPersonnage;
+        return listePersonnages;
     }
 
     public void addPersonnage(Personnage personnage)
     {
         if(personnage != null)
-            this.ListPersonnage.add(personnage);
+            this.listePersonnages.add(personnage);
     }
 
     public void addPersonnage(String nom, String role, String description)
     {
         Personnage newPersonnage = new Personnage(nom, role, description);
-        this.ListPersonnage.add(newPersonnage);
+        this.listePersonnages.add(newPersonnage);
     }
 
-    public void addPersonnage(String nom, String role)
-    {
-        Personnage newPersonnage = new Personnage(nom, role);
-        this.ListPersonnage.add(newPersonnage);
+
+    public List<Personnage> getListePersonnages() {
+        if (this.listePersonnages == null) {
+            this.listePersonnages = new ArrayList<>();
+        }
+        return this.listePersonnages;
     }
 
 
 
     @Override
     public String toString() {
-        return "Histoire{" +
-                "idHisoire=" + idHisoire +
-                ", titre='" + titre + '\'' +
-                ", auteur='" + auteur + '\'' +
-                ", resumer='" + resumer + '\'' +
-                ", ListPersonnage=" + ListPersonnage +
-                '}';
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.titre).append(" (par ").append(this.auteur).append(")\n");
+        sb.append("Résumé : ").append(this.resumer).append("\n");
+        sb.append("Casting :");
+
+        if (this.listePersonnages == null || this.listePersonnages.isEmpty()) {
+            sb.append(" Aucun personnage pour le moment.");
+        } else {
+            for (Personnage p : this.listePersonnages) {
+                sb.append("\n  - ").append(p.getNom_personnage()).append(" (").append(p.getRole_personnage()).append(")");
+            }
+        }
+        return sb.toString();
     }
 }
