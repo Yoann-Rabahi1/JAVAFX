@@ -1,11 +1,11 @@
 package org.example.projetjavafx.controller;
 
-import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.*;
 import org.example.projetjavafx.model.Histoire;
 import org.example.projetjavafx.model.Personnage;
+import org.example.projetjavafx.dao.MySqlPersonnageDAO;
 import org.example.projetjavafx.service.PersonnageService;
 
 import java.net.URL;
@@ -13,147 +13,186 @@ import java.util.ResourceBundle;
 
 public class PersonnageController implements Initializable {
 
-    private final PersonnageService personnageService = new PersonnageService();
+    // Injection de dépendance via le constructeur pour respecter SOLID (DIP)
+    private final PersonnageService personnageService = new PersonnageService(new MySqlPersonnageDAO());
 
-    @FXML
-    private Label lblCastingTitre;
+    private HistoireController histoireController;
+    private String ancienNomPersonnage;
 
-    @FXML
-    private ListView<Personnage> ListPersonnage;
-
-    @FXML
-    private ComboBox<Histoire> comboHistoires;
-
-    @FXML
-    private TextField txtFieldNomPersonnage;
-
-    @FXML
-    private TextField txtFieldRolePersonnage;
-
-    @FXML
-    private TextField txtFieldDescriptionPersonnage;
+    @FXML private ComboBox<Histoire> ComboHistoires;
+    @FXML private ListView<Personnage> ListPersonnages;
+    @FXML private TextField txtFieldNomPerso;
+    @FXML private TextField txtFieldRolePerso;
+    @FXML private TextArea txtAreaDescPerso;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        // Écouteur déjà existant pour les détails
-        ListPersonnage.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldSelection, newSelection) -> displayPersonnageDetails(newSelection)
-        );
-
-        // Écouteur déjà existant pour le changement d'histoire
-        comboHistoires.getSelectionModel().selectedItemProperty().addListener(
-                (obs, oldHistoire, nouvelleHistoire) -> rafraichirAffichageHistoire(nouvelleHistoire)
-        );
-
-        // ====================================================================
-        // CONFIGURATION DU CELL FACTORY POUR N'AFFICHER QUE LE TITRE
-        // ====================================================================
-        comboHistoires.setCellFactory(lv -> new ListCell<Histoire>() {
-            @Override
-            protected void updateItem(Histoire item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getTitre());
+        // ÉCOUTEUR : Quand on clique sur un personnage dans la liste
+        ListPersonnages.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                txtFieldNomPerso.setText(newSelection.getNom_personnage());
+                txtFieldRolePerso.setText(newSelection.getRole_personnage());
+                txtAreaDescPerso.setText(newSelection.getDescription_personnage());
+                // On sauvegarde le nom d'origine pour pouvoir gérer la détection des doublons lors d'un UPDATE
+                this.ancienNomPersonnage = newSelection.getNom_personnage();
             }
         });
 
-        // Modifie aussi l'affichage du titre une fois sélectionné dans la boîte
-        comboHistoires.setButtonCell(new ListCell<Histoire>() {
-            @Override
-            protected void updateItem(Histoire item, boolean empty) {
-                super.updateItem(item, empty);
-                setText(empty || item == null ? null : item.getTitre());
-            }
+        // ÉCOUTEUR : Si on change l'histoire sélectionnée dans le ComboBox
+        ComboHistoires.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
+            chargerPersonnagesPourHistoire(newSelection);
         });
     }
 
-    public void initialiserListeHistoires(ObservableList<Histoire> toutesLesHistoires) {
-        comboHistoires.setItems(toutesLesHistoires);
-    }
+    // Liens techniques requis pour le MainController et l'HistoireController
+    public void setHistoireController(HistoireController hc) { this.histoireController = hc; }
+    public ComboBox<Histoire> getComboHistoires() { return this.ComboHistoires; }
+    public ListView<Personnage> getListPersonnages() { return this.ListPersonnages; }
 
-    private void rafraichirAffichageHistoire(Histoire histoire) {
+    /**
+     * Synchronise la ListView des personnages en fonction de l'histoire passée en paramètre.
+     */
+    public void chargerPersonnagesPourHistoire(Histoire histoire) {
         if (histoire != null) {
-            lblCastingTitre.setText("Casting de : " + histoire.getTitre());
-            ListPersonnage.getItems().setAll(histoire.getListePersonnages());
+            this.ListPersonnages.getItems().setAll(histoire.getListePersonnages());
         } else {
-            lblCastingTitre.setText("Casting (Sélectionnez une histoire)");
-            ListPersonnage.getItems().clear();
+            this.ListPersonnages.getItems().clear();
         }
-        viderChampsPersonnage();
     }
+
+    /**
+     * Rafraîchit la liste des personnages (casting) pour l'histoire sélectionnée.
+     */
+    public void rafraichirPersonnages(Histoire histoire) {
+        if (histoire != null) {
+            // Si ton histoire contient déjà sa liste chargée en mémoire :
+            if (histoire.getListePersonnages() != null) {
+                ListPersonnages.getItems().setAll(histoire.getListePersonnages());
+            } else {
+                // Optionnel : si tu as un service pour les charger depuis la BDD par ID
+                // ListPersonnages.getItems().setAll(personnageService.getPersonnagesByHistoire(histoire.getIdHisoire()));
+                ListPersonnages.getItems().clear();
+            }
+
+            // Optionnel : Met à jour le ComboBox du casting pour refléter l'histoire active
+            ComboHistoires.getSelectionModel().select(histoire);
+        }
+        viderChamps();
+    }
+
+    /**
+     * Vide complètement la liste des personnages et les champs du formulaire.
+     */
+    public void viderInterface() {
+        ListPersonnages.getItems().clear();
+        viderChamps();
+    }
+
+    /**
+     * Méthode utilitaire pour nettoyer les champs de saisie du formulaire personnage.
+     */
+    private void viderChamps() {
+        if (txtFieldNomPerso != null) txtFieldNomPerso.clear();
+        if (txtFieldRolePerso != null) txtFieldRolePerso.clear();
+        if (txtAreaDescPerso != null) txtAreaDescPerso.clear();
+    }
+
+    // ==========================================
+    // ACTIONS APPLICATIVES (CRUD)
+    // ==========================================
 
     @FXML
     public void onAjouterPersonnage() {
-        Histoire histoireSelectionnee = comboHistoires.getSelectionModel().getSelectedItem();
-
+        Histoire histoireSelectionnee = ComboHistoires.getSelectionModel().getSelectedItem();
         if (histoireSelectionnee == null) {
-            afficherAlerteErreur("Sélection requise", "Veuillez sélectionner une histoire dans le menu déroulant.");
+            afficherAlerteErreur("Sélection requise", "Veuillez associer le personnage à une histoire.");
             return;
         }
 
-        String nom = txtFieldNomPersonnage.getText();
-        String role = txtFieldRolePersonnage.getText();
-        String desc = txtFieldDescriptionPersonnage.getText();
-
         try {
-            personnageService.creerPersonnage(nom, role, desc, histoireSelectionnee);
-            ListPersonnage.getItems().setAll(histoireSelectionnee.getListePersonnages());
+            // Le service valide les règles métier et appelle le DAO MySQL
+            Personnage p = personnageService.creerPersonnage(
+                    txtFieldNomPerso.getText(),
+                    txtFieldRolePerso.getText(),
+                    txtAreaDescPerso.getText(),
+                    histoireSelectionnee
+            );
+            // Si aucune exception n'est levée, on l'ajoute à la liste de l'IHM
+            ListPersonnages.getItems().add(p);
             viderChampsPersonnage();
         } catch (IllegalArgumentException e) {
-            afficherAlerteErreur("Erreur de personnage", e.getMessage());
+            afficherAlerteErreur("Erreur de création", e.getMessage());
         }
     }
 
     @FXML
     public void onModifierPersonnage() {
-        Histoire histoireSelectionnee = comboHistoires.getSelectionModel().getSelectedItem();
-        Personnage personnageSelectionne = ListPersonnage.getSelectionModel().getSelectedItem();
+        Personnage personnageSelectionne = ListPersonnages.getSelectionModel().getSelectedItem();
+        Histoire histoireSelectionnee = ComboHistoires.getSelectionModel().getSelectedItem();
 
-        if (histoireSelectionnee == null || personnageSelectionne == null) {
-            afficherAlerteErreur("Sélection requise", "Veuillez sélectionner l'histoire et le personnage à modifier.");
+        if (personnageSelectionne == null || histoireSelectionnee == null) {
+            afficherAlerteErreur("Sélection requise", "Veuillez sélectionner un personnage et son histoire.");
             return;
         }
 
-        String ancienNom = personnageSelectionne.getNom_personnage();
-        personnageSelectionne.setNom_personnage(txtFieldNomPersonnage.getText());
-        personnageSelectionne.setRole_personnage(txtFieldRolePersonnage.getText());
-        personnageSelectionne.setDescription_personnage(txtFieldDescriptionPersonnage.getText());
+        // 1. On capture le texte saisi sans toucher au personnage sélectionné
+        String nouveauNom = txtFieldNomPerso.getText();
+        String nouveauRole = txtFieldRolePerso.getText();
+        String nouvelleDesc = txtAreaDescPerso.getText();
 
         try {
-            personnageService.modifierPersonnage(personnageSelectionne, ancienNom, histoireSelectionnee);
-            ListPersonnage.refresh();
+            // 2. OBJET TEMPORAIRE : On crée un clone de test pour effectuer les validations
+            Personnage testPerso = new Personnage();
+            testPerso.setId_personnage(personnageSelectionne.getId_personnage());
+            testPerso.setNom_personnage(nouveauNom);
+            testPerso.setRole_personnage(nouveauRole);
+            testPerso.setDescription_personnage(nouvelleDesc);
+
+            // On teste la mise à jour. Si doublon, ça saute directement au bloc catch !
+            personnageService.modifierPersonnage(testPerso, ancienNomPersonnage, histoireSelectionnee);
+
+            // 3. APPLICATION : Si on arrive ici, la BDD est modifiée avec succès.
+            // On applique donc les modifications sur le vrai personnage de la liste
+            personnageSelectionne.setNom_personnage(nouveauNom);
+            personnageSelectionne.setRole_personnage(nouveauRole);
+            personnageSelectionne.setDescription_personnage(nouvelleDesc);
+
+            // Mise à jour de la référence pour le prochain clic/modification
+            this.ancienNomPersonnage = nouveauNom;
+
+            // Rafraîchissement de la vue JavaFX
+            ListPersonnages.refresh();
+            viderChampsPersonnage();
         } catch (IllegalArgumentException e) {
+            // En cas d'erreur, le vrai "personnageSelectionne" n'a subi aucun changement métier
             afficherAlerteErreur("Erreur de modification", e.getMessage());
         }
     }
 
     @FXML
     public void onSupprimerPersonnage() {
-        Histoire histoireSelectionnee = comboHistoires.getSelectionModel().getSelectedItem();
-        Personnage personnageSelectionne = ListPersonnage.getSelectionModel().getSelectedItem();
+        Personnage personnageSelectionne = ListPersonnages.getSelectionModel().getSelectedItem();
+        Histoire histoireSelectionnee = ComboHistoires.getSelectionModel().getSelectedItem();
 
-        if (histoireSelectionnee == null || personnageSelectionne == null) {
-            afficherAlerteErreur("Sélection requise", "Veuillez sélectionner l'histoire et le personnage à supprimer.");
+        if (personnageSelectionne == null || histoireSelectionnee == null) {
+            afficherAlerteErreur("Sélection requise", "Veuillez sélectionner un personnage à supprimer.");
             return;
         }
 
         personnageService.supprimerPersonnage(personnageSelectionne, histoireSelectionnee);
-        ListPersonnage.getItems().setAll(histoireSelectionnee.getListePersonnages());
+        ListPersonnages.getItems().remove(personnageSelectionne);
         viderChampsPersonnage();
     }
 
-    private void displayPersonnageDetails(Personnage personnageSelectionne) {
-        if (personnageSelectionne != null) {
-            txtFieldNomPersonnage.setText(personnageSelectionne.getNom_personnage());
-            txtFieldRolePersonnage.setText(personnageSelectionne.getRole_personnage());
-            txtFieldDescriptionPersonnage.setText(personnageSelectionne.getDescription_personnage());
-        }
-    }
+    // ==========================================
+    // OUTILS UTILITAIRES
+    // ==========================================
 
     private void viderChampsPersonnage() {
-        txtFieldNomPersonnage.clear();
-        txtFieldRolePersonnage.clear();
-        txtFieldDescriptionPersonnage.clear();
-        ListPersonnage.getSelectionModel().clearSelection();
+        txtFieldNomPerso.clear();
+        txtFieldRolePerso.clear();
+        txtAreaDescPerso.clear();
+        ListPersonnages.getSelectionModel().clearSelection();
     }
 
     private void afficherAlerteErreur(String titre, String message) {
@@ -162,10 +201,5 @@ public class PersonnageController implements Initializable {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
-    }
-
-    // LE GETTER CRUCIAL ICI
-    public ComboBox<Histoire> getComboHistoires() {
-        return this.comboHistoires;
     }
 }

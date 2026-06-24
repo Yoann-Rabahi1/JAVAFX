@@ -1,33 +1,49 @@
 package org.example.projetjavafx.service;
 
+import org.example.projetjavafx.dao.HistoireDAO;
+import org.example.projetjavafx.dao.PersonnageDAO;
 import org.example.projetjavafx.model.Histoire;
+import org.example.projetjavafx.model.Personnage;
+import java.util.List;
 
 public class HistoireService {
 
-    public Histoire creerHistoire(String titre, String auteur, String resume) {
-        // Validation des contraintes de l'énoncé
-        if (titre == null || titre.trim().isEmpty()) {
-            throw new IllegalArgumentException("Le titre de l'histoire ne peut pas être vide !");
-        }
-        if (auteur == null || auteur.trim().isEmpty()) {
-            throw new IllegalArgumentException("L'auteur de l'histoire ne peut pas être vide !");
-        }
+    private final HistoireDAO histoireDAO;
+    private final PersonnageDAO personnageDAO;
 
-        // Si c'est valide, on crée l'objet
-        return new Histoire(titre, auteur, resume);
+    public HistoireService(HistoireDAO histoireDAO, PersonnageDAO personnageDAO) {
+        this.histoireDAO = histoireDAO;
+        this.personnageDAO = personnageDAO;
+    }
+
+    public List<Histoire> recupererToutesLesHistoires() {
+        List<Histoire> histoires = histoireDAO.chargerTout();
+        for (Histoire h : histoires) {
+            List<Personnage> deLaBDD = personnageDAO.chargerParHistoire(h.getIdHisoire());
+            h.getListePersonnages().clear();
+            h.getListePersonnages().addAll(deLaBDD);
+        }
+        return histoires;
+    }
+
+    public Histoire creerHistoire(String titre, String auteur, String resume) {
+        if (titre == null || titre.trim().isEmpty()) throw new IllegalArgumentException("Titre requis.");
+        if (auteur == null || auteur.trim().isEmpty()) throw new IllegalArgumentException("Auteur requis.");
+
+        Histoire h = new Histoire();
+        h.setTitre(titre);
+        h.setAuteur(auteur);
+        h.setResumer(resume);
+        histoireDAO.sauvegarder(h);
+        return h;
     }
 
     public void modifierHistoire(Histoire histoire) {
-        if (histoire.getTitre() == null || histoire.getTitre().trim().isEmpty()) {
-            throw new IllegalArgumentException("Le titre modifié ne peut pas être vide !");
-        }
-        if (histoire.getAuteur() == null || histoire.getAuteur().trim().isEmpty()) {
-            throw new IllegalArgumentException("L'auteur modifié ne peut pas être vide !");
-        }
+        if (histoire.getTitre() == null || histoire.getTitre().trim().isEmpty()) throw new IllegalArgumentException("Titre requis.");
+        histoireDAO.mettreAJour(histoire);
     }
 
     public void supprimerHistoire(Histoire histoire) {
-        // En mémoire (Étape 1), le fait de la retirer de la liste du contrôleur suffit.
-        // À l'Étape 2, c'est ici qu'on appellera histoireRepository.delete(histoire.getId_histoire());
+        if (histoire != null) histoireDAO.supprimer(histoire.getIdHisoire());
     }
 }
