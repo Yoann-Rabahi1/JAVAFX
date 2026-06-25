@@ -21,3 +21,24 @@ CREATE TABLE IF NOT EXISTS personnage (
         REFERENCES histoire(id_histoire) 
         ON DELETE CASCADE -- Si on supprime une histoire, ses personnages partent avec
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS scene (
+    id_scene INT AUTO_INCREMENT PRIMARY KEY,
+    titre VARCHAR(255) NOT NULL,
+    lieu VARCHAR(255),
+    moment VARCHAR(255),
+    contenu TEXT NOT NULL,
+    position INT NOT NULL,
+    statut VARCHAR(50) NOT NULL,
+    id_histoire INT NOT NULL,
+    FOREIGN KEY (id_histoire) REFERENCES histoire(id_histoire) ON DELETE CASCADE,
+    UNIQUE(id_histoire, position) -- Garantit la contrainte de position unique par histoire
+);
+
+CREATE TABLE IF NOT EXISTS scene_personnage (
+    id_scene INT NOT NULL,
+    id_personnage INT NOT NULL,
+    PRIMARY KEY (id_scene, id_personnage),
+    FOREIGN KEY (id_scene) REFERENCES scene(id_scene) ON DELETE CASCADE,
+    FOREIGN KEY (id_personnage) REFERENCES personnage(id_personnage) ON DELETE CASCADE
+);
