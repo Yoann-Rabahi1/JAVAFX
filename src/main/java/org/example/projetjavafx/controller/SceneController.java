@@ -8,6 +8,10 @@ import org.example.projetjavafx.model.Scene;
 import org.example.projetjavafx.repository.MySqlSceneRepository;
 import org.example.projetjavafx.service.SceneService;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +37,38 @@ public class SceneController {
     public void initialize() {
         // Configuration initiale des choix de statuts obligatoires
         ComboStatut.getItems().setAll("Planifiée", "En cours", "Rédigée", "Validée");
+
+        // --- CONFIGURATION DU RENDU VISUEL (Évite les adresses mémoire @1a2b3c) ---
+        ListScenes.setCellFactory(lv -> new ListCell<Scene>() {
+            @Override
+            protected void updateItem(Scene item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getTitre() + " [" + item.getStatut() + "]");
+            }
+        });
+
+        ListPersonnagesPresents.setCellFactory(lv -> new ListCell<Personnage>() {
+            @Override
+            protected void updateItem(Personnage item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getNom_personnage());
+            }
+        });
+
+        ComboAjoutPersonnage.setCellFactory(lv -> new ListCell<Personnage>() {
+            @Override
+            protected void updateItem(Personnage item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getNom_personnage());
+            }
+        });
+        ComboAjoutPersonnage.setButtonCell(new ListCell<Personnage>() {
+            @Override
+            protected void updateItem(Personnage item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty || item == null ? "" : item.getNom_personnage());
+            }
+        });
 
         // ÉCOUTEUR : Met à jour les champs textuels et le casting dès qu'une scène est sélectionnée
         ListScenes.getSelectionModel().selectedItemProperty().addListener((obs, oldSec, newSec) -> {
@@ -68,11 +104,39 @@ public class SceneController {
      */
     public void rafraichirScenes(Histoire histoire) {
         if (histoire != null) {
-            // Récupération des données depuis la BDD (avec requêtes de jointures incluses dans le Repository)
+            // Récupération des données depuis la BDD
             List<Scene> list = sceneService.getScenesByHistoire(histoire.getIdHisoire());
+
+            // FIX : On va chercher en BDD les personnages associés à CHAQUE scène chargée
+            if (list != null) {
+                try (Connection conn = org.example.projetjavafx.dao.DatabaseConnection.getConnection()) {
+                    String sql = "SELECT p.* FROM personnage p " +
+                            "JOIN scene_personnage sp ON p.id_personnage = sp.id_personnage " +
+                            "WHERE sp.id_scene = ?";
+
+                    for (Scene s : list) {
+                        List<Personnage> presents = new ArrayList<>();
+                        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                            pstmt.setInt(1, s.getIdScene());
+                            try (ResultSet rs = pstmt.executeQuery()) {
+                                while (rs.next()) {
+                                    Personnage p = new Personnage();
+                                    p.setId_personnage(rs.getInt("id_personnage"));
+                                    p.setNom_personnage(rs.getString("nom_personnage"));
+                                    presents.add(p);
+                                }
+                            }
+                        }
+                        s.setPersonnagesPresents(presents);
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+
             ListScenes.getItems().setAll(list);
 
-            // Met à jour la liste des personnages éligibles à l'association (le casting global de l'histoire)
+            // Met à jour la liste des personnages éligibles à l'association
             if (histoire.getListePersonnages() != null) {
                 ComboAjoutPersonnage.getItems().setAll(histoire.getListePersonnages());
             } else {
@@ -95,7 +159,6 @@ public class SceneController {
         try {
             int pos = Integer.parseInt(txtFieldPosition.getText().trim());
 
-            // Envoi des inputs à la couche Service pour persistance
             Scene nouvelleScene = sceneService.creerScene(
                     txtFieldTitre.getText(),
                     txtFieldLieu.getText(),
@@ -106,12 +169,10 @@ public class SceneController {
                     histoireActive
             );
 
-            // Garantie de l'existence de la liste locale des personnages pour éviter les bugs d'affichage
             if (nouvelleScene.getPersonnagesPresents() == null) {
                 nouvelleScene.setPersonnagesPresents(new ArrayList<>());
             }
 
-            // Insertion dynamique dans le composant visuel
             ListScenes.getItems().add(nouvelleScene);
             ListScenes.getSelectionModel().select(nouvelleScene);
             viderChamps();
@@ -124,7 +185,7 @@ public class SceneController {
     }
 
     /**
-     * Action : Bouton Modifier (Résout l'erreur de LoadException FXML)
+     * Action : Bouton Modifier
      */
     @FXML
     public void onModifierScene() {
@@ -139,7 +200,6 @@ public class SceneController {
         try {
             int anciennePosition = sceneSelectionnee.getPosition();
 
-            // Transfert des modifications graphiques vers l'instance
             sceneSelectionnee.setTitre(txtFieldTitre.getText());
             sceneSelectionnee.setLieu(txtFieldLieu.getText());
             sceneSelectionnee.setMoment(txtFieldMoment.getText());
@@ -147,10 +207,8 @@ public class SceneController {
             sceneSelectionnee.setPosition(Integer.parseInt(txtFieldPosition.getText().trim()));
             sceneSelectionnee.setStatut(ComboStatut.getSelectionModel().getSelectedItem());
 
-            // Notification et traitement par la couche métier
             sceneService.modifierScene(sceneSelectionnee, anciennePosition, histoireActive);
 
-            // Rafraîchissement graphique de l'élément modifié
             ListScenes.refresh();
             afficherAlert("Succès", "La scène a bien été mise à jour.");
 
@@ -162,7 +220,7 @@ public class SceneController {
     }
 
     /**
-     * Action : Bouton Supprimer (Résout l'erreur de LoadException FXML)
+     * Action : Bouton Supprimer
      */
     @FXML
     public void onSupprimerScene() {
@@ -174,7 +232,6 @@ public class SceneController {
             return;
         }
 
-        // Destruction en BDD et mise à jour des structures de données
         sceneService.supprimerScene(sceneSelectionnee, histoireActive);
         ListScenes.getItems().remove(sceneSelectionnee);
         viderChamps();
@@ -196,7 +253,6 @@ public class SceneController {
 
         try {
             sceneService.associerPersonnageAScene(sceneSel, persoSel, histoireActive);
-            // Rechargement immédiat de la liste de droite pour afficher le personnage ajouté
             ListPersonnagesPresents.getItems().setAll(sceneSel.getPersonnagesPresents());
         } catch (Exception e) {
             afficherAlert("Erreur d'association", e.getMessage());
