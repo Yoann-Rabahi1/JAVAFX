@@ -7,16 +7,26 @@ import org.example.projetjavafx.model.Personnage;
 import org.example.projetjavafx.model.Histoire;
 import java.util.List;
 
+public interface SceneRepository{
+    public void save(Scene scene, int idHistoire);
+    public List<Scene> findByHistoire(int idHistoire);
+    public void update(Scene scene);
+    public void delete(int idScene);
+    public void addCharacterToScene(int idScene, int idPersonnage);
+    public void removeCharacterFromScene(int idScene, int idPersonnage);
+
+}
+
+/*
+
 public class SceneRepository {
 
     private final SceneDAO sceneDAO;
 
-    // Par défaut, on lui injecte l'implémentation MySQL
     public SceneRepository() {
         this.sceneDAO = new MySqlSceneDAO();
     }
 
-    // Le Repository délègue ensuite le travail au DAO
     public void save(Scene scene, int idHistoire) {
         sceneDAO.sauvegarder(scene, idHistoire);
     }
@@ -41,3 +51,5 @@ public class SceneRepository {
         sceneDAO.retirerPersonnageDeScene(idScene, idPersonnage);
     }
 }
+
+*/
