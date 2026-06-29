@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<GridPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://fxml/1"
+          fx:controller="org.example.projetjavafx.controller.DashboardController"
+          hgap="15.0" vgap="15.0" style="-fx-padding: 20; -fx-background-color: #f5f6fa;">
+
+    <columnConstraints>
+        <ColumnConstraints percentWidth="40.0" />
+        <ColumnConstraints percentWidth="60.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints percentHeight="10.0" /> <RowConstraints percentHeight="25.0" /> <RowConstraints percentHeight="65.0" /> </rowConstraints>
+
+    <children>
+        <HBox spacing="15.0" alignment="CENTER_LEFT" style="-fx-background-color: white; -fx-padding: 10; -fx-background-radius: 8;" GridPane.columnSpan="2" GridPane.rowIndex="0">
+            <children>
+                <Label text="🎯 Choisir une Histoire pour le Dashboard :" style="-fx-font-weight: bold;" />
+                <ComboBox fx:id="comboChoixHistoire" prefWidth="250.0" promptText="Sélectionner un projet..." />
+            </children>
+        </HBox>
+
+        <VBox spacing="10.0" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="0" GridPane.rowIndex="1">
+            <children>
+                <Label text="📊 Statistiques Générales" style="-fx-font-weight: bold; -fx-font-size: 14;" />
+                <Separator />
+                <Label fx:id="lblTotalPersonnages" text="Nombre total de personnages : 0" />
+                <Label fx:id="lblTotalScenes" text="Nombre total de scènes : 0" />
+            </children>
+        </VBox>
+
+        <VBox spacing="10.0" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnIndex="1" GridPane.rowIndex="1">
+            <children>
+                <Label text="📈 Répartition par Statut" style="-fx-font-weight: bold; -fx-font-size: 14;" />
+                <Separator />
+                <VBox spacing="5.0">
+                    <children>
+                        <Label fx:id="lblStatutPlanifiee" text="Planifiées : 0" />
+                        <Label fx:id="lblStatutEnCours" text="En cours : 0" />
+                        <Label fx:id="lblStatutRedigee" text="Rédigées : 0" />
+                        <Label fx:id="lblStatutValidee" text="Validées : 0" />
+                    </children>
+                </VBox>
+            </children>
+        </VBox>
+
+        <VBox spacing="15.0" style="-fx-background-color: white; -fx-padding: 15; -fx-background-radius: 8;" GridPane.columnSpan="2" GridPane.rowIndex="2">
+            <children>
+                <Label text="🔍 Outils de Filtrage et de Recherche" style="-fx-font-weight: bold; -fx-font-size: 14;" />
+                <HBox spacing="15.0" alignment="CENTER_LEFT">
+                    <children>
+                        <Label text="Statut :" />
+                        <ComboBox fx:id="comboFiltreStatut" prefWidth="130.0" promptText="Tous" />
+                        <Label text="Personnage :" />
+                        <ComboBox fx:id="comboFiltrePersonnage" prefWidth="150.0" promptText="Tous" />
+                        <Label text="Mot-clé :" />
+                        <TextField fx:id="txtRechercheMotCle" HBox.hgrow="ALWAYS" promptText="Rechercher..." />
+                        <Button mnemonicParsing="false" onAction="#onReinitialiserFiltres" text="🔄 Reset" />
+                    </children>
+                </HBox>
+                <Separator />
+                <ListView fx:id="listScenesFiltrees" VBox.vgrow="ALWAYS" />
+            </children>
+        </VBox>
+    </children>
+</GridPane>

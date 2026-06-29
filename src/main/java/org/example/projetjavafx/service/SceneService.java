@@ -12,6 +12,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 public class SceneService {
 
@@ -20,6 +22,59 @@ public class SceneService {
     // Injection du repository MySQL par le constructeur
     public SceneService(MySqlSceneRepository sceneRepository) {
         this.sceneRepository = sceneRepository;
+    }
+
+    /**
+     * STATISTIQUES : Compte le nombre de scènes par statut à l'aide d'un Stream Collector (groupingBy)
+     */
+    public Map<String, Long> getNombreScenesParStatut(Histoire histoire) {
+        if (histoire == null || histoire.getListeScenes() == null) {
+            return Map.of();
+        }
+
+        return histoire.getListeScenes().stream()
+                .filter(scene -> scene.getStatut() != null)
+                .collect(Collectors.groupingBy(Scene::getStatut, Collectors.counting()));
+    }
+
+    /**
+     * RECHERCHE & FILTRAGE : Combine le filtrage par statut, par personnage présent et la recherche par mot-clé
+     */
+    public List<Scene> filtrerEtRechercherScenes(Histoire histoire, String statutFiltre, Personnage personnageFiltre, String motCle) {
+        if (histoire == null || histoire.getListeScenes() == null) {
+            return List.of();
+        }
+
+        return histoire.getListeScenes().stream()
+                .filter(scene -> {
+                    // 1. Filtrage par statut (si un statut est sélectionné)
+                    if (statutFiltre != null && !statutFiltre.isEmpty()) {
+                        return scene.getStatut() != null && scene.getStatut().equalsIgnoreCase(statutFiltre);
+                    }
+                    return true;
+                })
+                .filter(scene -> {
+                    // 2. Filtrage par personnage présent (si un personnage est sélectionné)
+                    if (personnageFiltre != null) {
+                        if (scene.getPersonnagesPresents() == null) {
+                            return false;
+                        }
+                        return scene.getPersonnagesPresents().stream()
+                                .anyMatch(p -> p.getId_personnage() == personnageFiltre.getId_personnage());
+                    }
+                    return true;
+                })
+                .filter(scene -> {
+                    // 3. Recherche par mot-clé sur le titre OU le contenu (si saisi)
+                    if (motCle != null && !motCle.trim().isEmpty()) {
+                        String lowerMot = motCle.toLowerCase().trim();
+                        boolean matchesTitre = scene.getTitre() != null && scene.getTitre().toLowerCase().contains(lowerMot);
+                        boolean matchesContenu = scene.getContenu() != null && scene.getContenu().toLowerCase().contains(lowerMot);
+                        return matchesTitre || matchesContenu;
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     /**
@@ -164,6 +219,9 @@ public class SceneService {
         }
     }
 
+    /**
+     * Récupère la liste brute des scènes d'une histoire depuis la base de données.
+     */
     public List<Scene> getScenesByHistoire(int idHistoire) {
         List<Scene> liste = new ArrayList<>();
         String query = "SELECT * FROM scene WHERE id_histoire = ?";
@@ -175,10 +233,8 @@ public class SceneService {
 
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                    // Instanciation de l'objet avec le constructeur vide
                     Scene scene = new Scene();
 
-                    // Hydratation via les setters
                     scene.setIdScene(rs.getInt("id_scene"));
                     scene.setTitre(rs.getString("titre"));
                     scene.setLieu(rs.getString("lieu"));
@@ -195,6 +251,4 @@ public class SceneService {
         }
         return liste;
     }
-
-
 }

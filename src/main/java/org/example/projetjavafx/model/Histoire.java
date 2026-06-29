@@ -27,6 +27,7 @@ public class Histoire {
     public List<Personnage> getListePersonnages() { return listePersonnages; }
     public List<Scene> getListeScenes() {return this.listeScenes;}
     public void setListeScenes(List<Scene> listeScenes) {this.listeScenes = listeScenes;}
+    public void setListePersonnages(List<Personnage> listePersonnages) {this.listePersonnages = listePersonnages;}
 
     @Override
     public String toString() { return this.titre; }

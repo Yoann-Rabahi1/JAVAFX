@@ -2,8 +2,14 @@ package org.example.projetjavafx.controller;
 
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
-import org.example.projetjavafx.model.Histoire;
+import javafx.scene.Parent;
+import javafx.scene.control.Alert;
+import javafx.scene.control.SplitPane;
+import javafx.scene.layout.StackPane;
+
+import java.io.IOException;
 import java.net.URL;
 import java.util.ResourceBundle;
 
@@ -13,21 +19,21 @@ public class MainController implements Initializable {
     @FXML private PersonnageController personnageViewController;
     @FXML private SceneController sceneViewController;
 
+    @FXML private StackPane mainContentArea;
+    @FXML private SplitPane paneEdition;
+
+    private Parent vueDashboard = null;
+    private DashboardController dashboardController = null;
+
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
         if (histoireViewController != null && personnageViewController != null && sceneViewController != null) {
-
-            // On donne une référence de HistoireController aux autres pour qu'ils puissent lire l'histoire active
             personnageViewController.setHistoireController(histoireViewController);
             sceneViewController.setHistoireController(histoireViewController);
 
-            // ÉCOUTEUR : Quand on clique sur une histoire dans la liste de gauche
             histoireViewController.getListHistoires().getSelectionModel().selectedItemProperty().addListener((obs, oldHist, newHist) -> {
                 if (newHist != null) {
-                    // 1. Refresh du casting (Persos) en haut
                     personnageViewController.rafraichirPersonnages(newHist);
-
-                    // 2. Refresh des scènes en bas
                     sceneViewController.rafraichirScenes(newHist);
                 } else {
                     personnageViewController.viderInterface();
@@ -35,6 +41,48 @@ public class MainController implements Initializable {
                 }
             });
         }
+    }
+
+    @FXML
+    public void afficherPageEdition() {
+        if (vueDashboard != null) {
+            vueDashboard.setVisible(false);
+        }
+        paneEdition.setVisible(true);
+    }
+
+    @FXML
+    public void ouvrirDashboard() {
+        try {
+            paneEdition.setVisible(false);
+
+            if (vueDashboard == null) {
+                // Utilisation du chemin absolu pour le classpath
+                FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/example/projetjavafx/dashboard-view.fxml"));
+                vueDashboard = fxmlLoader.load();
+                dashboardController = fxmlLoader.getController();
+                mainContentArea.getChildren().add(vueDashboard);
+            }
+
+            // Au moment d'ouvrir, on demande au Dashboard de charger ses propres données depuis la BDD
+            if (dashboardController != null) {
+                dashboardController.chargerHistoiresDepuisBdd();
+            }
+
+            vueDashboard.setVisible(true);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            afficherErreur("Erreur", "Impossible de charger le tableau de bord.");
+        }
+    }
+
+    private void afficherErreur(String titre, String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle(titre);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
 
     @FXML
