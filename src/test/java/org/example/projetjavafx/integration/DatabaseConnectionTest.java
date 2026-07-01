@@ -11,8 +11,8 @@ import java.sql.Statement;
  */
 public class DatabaseConnectionTest {
 
-    private static final String URL      = "jdbc:h2:mem:story_forge_test;DB_CLOSE_DELAY=-1;MODE=MySQL";
-    private static final String USER     = "sa";
+    private static final String URL = "jdbc:h2:mem:story_forge_test;DB_CLOSE_DELAY=-1;MODE=MySQL";
+    private static final String USER = "sa";
     private static final String PASSWORD = "";
 
     private static Connection connection = null;
