@@ -59,9 +59,7 @@ class MetierTest {
         @Override public List<Scene> chargerParHistoire(int id)        { return new ArrayList<>(store); }
     }
 
-    // -----------------------------------------------------------------------
-    //  Initialisation
-    // -----------------------------------------------------------------------
+
 
     private HistoireService   histoireService;
     private PersonnageService personnageService;
@@ -81,9 +79,6 @@ class MetierTest {
         histoireTest.setAuteur("JUnit");
     }
 
-    // -----------------------------------------------------------------------
-    //  Tests : Histoire
-    // -----------------------------------------------------------------------
 
     @Test
     @DisplayName("Une histoire ne peut pas avoir un titre vide")
@@ -108,9 +103,7 @@ class MetierTest {
         assertEquals("Titre valide", h.getTitre());
     }
 
-    // -----------------------------------------------------------------------
-    //  Tests : Personnage
-    // -----------------------------------------------------------------------
+
 
     @Test
     @DisplayName("Un personnage ne peut pas avoir un nom vide")
@@ -137,7 +130,6 @@ class MetierTest {
         frodo.setRole_personnage("Héros");
         histoireTest.getListePersonnages().add(frodo);
 
-        // Tenter d'ajouter un deuxième avec le même nom doit échouer
         assertThrows(IllegalArgumentException.class,
                 () -> personnageService.creerPersonnage("Frodo", "Méchant", "Desc", histoireTest),
                 "Deux personnages du même nom dans la même histoire doivent lever une exception");
@@ -162,9 +154,7 @@ class MetierTest {
         assertEquals("Aragorn", p.getNom_personnage());
     }
 
-    // -----------------------------------------------------------------------
-    //  Tests : Scène
-    // -----------------------------------------------------------------------
+
 
     @Test
     @DisplayName("Une scène ne peut pas avoir un titre vide")
@@ -231,9 +221,7 @@ class MetierTest {
         assertTrue(scene.getPersonnagesPresents().contains(bilbo));
     }
 
-    // -----------------------------------------------------------------------
-    //  Tests : Filtrage et recherche
-    // -----------------------------------------------------------------------
+
 
     private Histoire histoireAvecScenes() {
         Histoire h = new Histoire();

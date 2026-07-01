@@ -162,14 +162,10 @@ public class DashboardController {
         Personnage perso = comboFiltrePersonnage.getSelectionModel().getSelectedItem();
         String motCle = txtRechercheMotCle.getText();
 
-        // 1. Filtrage de base (Statut et Mot-clé)
         List<Scene> resultats = sceneService.filtrerEtRechercherScenes(histoireActuelle, statut, null, motCle);
 
-        // 2. Filtrage par Personnage
         if (perso != null) {
 
-            // --- OPTION A : SI TU AS UNE TABLE DE LIAISON DANS TA BDD ---
-            // (Vérifie bien que le nom de la table 'scene_personnage' et des colonnes sont corrects)
             List<Integer> idsScenesDuPersonnage = new ArrayList<>();
             String sqlLiaison = "SELECT id_scene FROM scene_personnage WHERE id_personnage = ?";
 
@@ -182,19 +178,13 @@ public class DashboardController {
                     }
                 }
             } catch (SQLException e) {
-                // Si la table n'existe pas ou a un autre nom, l'erreur s'affichera dans la console
                 System.err.println("Erreur table liaison: " + e.getMessage());
             }
 
-            // Si on a trouvé des liaisons en BDD, on filtre dessus
             if (!idsScenesDuPersonnage.isEmpty()) {
                 resultats = resultats.stream()
                         .filter(s -> idsScenesDuPersonnage.contains(s.getIdScene()))
                         .collect(Collectors.toList());
-            } else {
-                // OPTION B : SI CHAQUE SCÈNE A DIRECTEMENT UNE CLÉ ÉTRANGÈRE 'id_personnage' (Relation 1 à N)
-                // Décommente la ligne ci-dessous si ton modèle Scene possède un getId_personnage() ou similaire :
-                // resultats = resultats.stream().filter(s -> s.getId_personnage() == perso.getId_personnage()).collect(Collectors.toList());
             }
         }
 

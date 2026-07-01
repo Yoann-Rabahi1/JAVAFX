@@ -13,7 +13,6 @@ import java.util.ResourceBundle;
 
 public class PersonnageController implements Initializable {
 
-    // Injection de dépendance via le constructeur pour respecter SOLID (DIP)
     private final PersonnageService personnageService = new PersonnageService(new MySqlPersonnageDAO());
 
     private HistoireController histoireController;
@@ -27,7 +26,6 @@ public class PersonnageController implements Initializable {
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
-        // ÉCOUTEUR : Quand on clique sur un personnage dans la liste
         ListPersonnages.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
             if (newSelection != null) {
                 txtFieldNomPerso.setText(newSelection.getNom_personnage());
@@ -38,13 +36,11 @@ public class PersonnageController implements Initializable {
             }
         });
 
-        // ÉCOUTEUR : Si on change l'histoire sélectionnée dans le ComboBox
         ComboHistoires.getSelectionModel().selectedItemProperty().addListener((observable, oldSelection, newSelection) -> {
             chargerPersonnagesPourHistoire(newSelection);
         });
     }
 
-    // Liens techniques requis pour le MainController et l'HistoireController
     public void setHistoireController(HistoireController hc) { this.histoireController = hc; }
     public ComboBox<Histoire> getComboHistoires() { return this.ComboHistoires; }
     public ListView<Personnage> getListPersonnages() { return this.ListPersonnages; }
@@ -65,16 +61,13 @@ public class PersonnageController implements Initializable {
      */
     public void rafraichirPersonnages(Histoire histoire) {
         if (histoire != null) {
-            // Si ton histoire contient déjà sa liste chargée en mémoire :
             if (histoire.getListePersonnages() != null) {
                 ListPersonnages.getItems().setAll(histoire.getListePersonnages());
             } else {
-                // Optionnel : si tu as un service pour les charger depuis la BDD par ID
-                // ListPersonnages.getItems().setAll(personnageService.getPersonnagesByHistoire(histoire.getIdHisoire()));
+
                 ListPersonnages.getItems().clear();
             }
 
-            // Optionnel : Met à jour le ComboBox du casting pour refléter l'histoire active
             ComboHistoires.getSelectionModel().select(histoire);
         }
         viderChamps();
@@ -97,9 +90,7 @@ public class PersonnageController implements Initializable {
         if (txtAreaDescPerso != null) txtAreaDescPerso.clear();
     }
 
-    // ==========================================
-    // ACTIONS APPLICATIVES (CRUD)
-    // ==========================================
+
 
     @FXML
     public void onAjouterPersonnage() {
@@ -110,14 +101,12 @@ public class PersonnageController implements Initializable {
         }
 
         try {
-            // Le service valide les règles métier et appelle le DAO MySQL
             Personnage p = personnageService.creerPersonnage(
                     txtFieldNomPerso.getText(),
                     txtFieldRolePerso.getText(),
                     txtAreaDescPerso.getText(),
                     histoireSelectionnee
             );
-            // Si aucune exception n'est levée, on l'ajoute à la liste de l'IHM
             ListPersonnages.getItems().add(p);
             viderChampsPersonnage();
         } catch (IllegalArgumentException e) {
@@ -135,36 +124,29 @@ public class PersonnageController implements Initializable {
             return;
         }
 
-        // 1. On capture le texte saisi sans toucher au personnage sélectionné
         String nouveauNom = txtFieldNomPerso.getText();
         String nouveauRole = txtFieldRolePerso.getText();
         String nouvelleDesc = txtAreaDescPerso.getText();
 
         try {
-            // 2. OBJET TEMPORAIRE : On crée un clone de test pour effectuer les validations
             Personnage testPerso = new Personnage();
             testPerso.setId_personnage(personnageSelectionne.getId_personnage());
             testPerso.setNom_personnage(nouveauNom);
             testPerso.setRole_personnage(nouveauRole);
             testPerso.setDescription_personnage(nouvelleDesc);
 
-            // On teste la mise à jour. Si doublon, ça saute directement au bloc catch !
             personnageService.modifierPersonnage(testPerso, ancienNomPersonnage, histoireSelectionnee);
 
-            // 3. APPLICATION : Si on arrive ici, la BDD est modifiée avec succès.
-            // On applique donc les modifications sur le vrai personnage de la liste
+
             personnageSelectionne.setNom_personnage(nouveauNom);
             personnageSelectionne.setRole_personnage(nouveauRole);
             personnageSelectionne.setDescription_personnage(nouvelleDesc);
 
-            // Mise à jour de la référence pour le prochain clic/modification
             this.ancienNomPersonnage = nouveauNom;
 
-            // Rafraîchissement de la vue JavaFX
             ListPersonnages.refresh();
             viderChampsPersonnage();
         } catch (IllegalArgumentException e) {
-            // En cas d'erreur, le vrai "personnageSelectionne" n'a subi aucun changement métier
             afficherAlerteErreur("Erreur de modification", e.getMessage());
         }
     }
@@ -184,9 +166,7 @@ public class PersonnageController implements Initializable {
         viderChampsPersonnage();
     }
 
-    // ==========================================
-    // OUTILS UTILITAIRES
-    // ==========================================
+
 
     private void viderChampsPersonnage() {
         txtFieldNomPerso.clear();

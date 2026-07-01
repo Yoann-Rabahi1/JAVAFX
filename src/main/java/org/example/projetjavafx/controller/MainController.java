@@ -57,14 +57,12 @@ public class MainController implements Initializable {
             paneEdition.setVisible(false);
 
             if (vueDashboard == null) {
-                // Utilisation du chemin absolu pour le classpath
                 FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/org/example/projetjavafx/dashboard-view.fxml"));
                 vueDashboard = fxmlLoader.load();
                 dashboardController = fxmlLoader.getController();
                 mainContentArea.getChildren().add(vueDashboard);
             }
 
-            // Au moment d'ouvrir, on demande au Dashboard de charger ses propres données depuis la BDD
             if (dashboardController != null) {
                 dashboardController.chargerHistoiresDepuisBdd();
             }
